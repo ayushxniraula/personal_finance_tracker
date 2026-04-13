@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artho — Finance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0d; --bg2: #1a1a16; --bg3: #232320;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.14);
+  --text: #f0ede4; --text2: #8a8878; --text3: #5a5a52;
+  --gold: #c9a84c; --gold-light: #e8c97a; --gold-dim: rgba(201,168,76,0.12);
+  --green: #4a8c5c; --green-light: #6dbf82; --green-dim: rgba(74,140,92,0.12);
+  --red: #c0513a; --red-light: #e06b52; --red-dim: rgba(192,81,58,0.12);
+  --blue: #4a7fa8; --blue-light: #6aafd6; --blue-dim: rgba(74,127,168,0.12);
+  --purple: #7a5fa8; --purple-light: #a882d6; --purple-dim: rgba(122,95,168,0.12);
+  --radius: 12px; --radius-sm: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.5; }
+.app { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar { width: 220px; min-height: 100vh; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 0; position: fixed; top: 0; left: 0; z-index: 100; overflow-y: auto; }
+.sidebar-logo { padding: 0 20px 28px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.sidebar-logo h1 { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--gold-light); letter-spacing: -0.3px; }
+.sidebar-logo p { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 2px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: var(--text2); cursor: pointer; font-size: 13px; font-weight: 400; transition: all 0.15s; border-left: 2px solid transparent; margin: 1px 0; }
+.nav-item:hover { color: var(--text); background: var(--bg3); }
+.nav-item.active { color: var(--gold-light); border-left-color: var(--gold); background: var(--gold-dim); }
+.nav-icon { font-size: 16px; width: 18px; text-align: center; }
+.sidebar-bottom { margin-top: auto; padding: 20px; border-top: 1px solid var(--border); }
+.net-worth-label { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
+.net-worth-value { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--gold-light); margin-top: 4px; margin-bottom: 16px; }
+.goal-section { margin-top: 4px; }
+.goal-label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.goal-name { font-size: 10px; color: var(--text2); font-family: 'DM Mono', monospace; }
+.goal-remaining { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; }
+.goal-bar { height: 5px; background: var(--bg3); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+.goal-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.goal-fill-10  { background: linear-gradient(90deg, var(--gold),   var(--gold-light)); }
+.goal-fill-20  { background: linear-gradient(90deg, var(--purple), var(--purple-light)); }
+.goal-fill-100 { background: linear-gradient(90deg, var(--green),  var(--green-light)); }
+
+/* Main */
+.main { margin-left: 220px; flex: 1; padding: 32px; }
+.page { display: none; }
+.page.active { display: block; }
+.page-header { margin-bottom: 28px; }
+.page-header h2 { font-family: 'DM Serif Display', serif; font-size: 28px; font-weight: 400; color: var(--text); letter-spacing: -0.5px; }
+.page-header p { color: var(--text2); font-size: 13px; margin-top: 4px; }
+.page-actions { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; }
+
+/* Cards */
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; transition: border-color 0.2s; }
+.card:hover { border-color: var(--border2); }
+.card-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.8px; padding: 3px 8px; border-radius: 20px; margin-bottom: 14px; }
+.tag-saving    { background: var(--gold-dim);   color: var(--gold-light); }
+.tag-daily     { background: var(--blue-dim);   color: var(--blue-light); }
+.tag-emergency { background: var(--red-dim);    color: var(--red-light); }
+.tag-investment{ background: var(--purple-dim); color: var(--purple-light); }
+.tag-other     { background: var(--green-dim);  color: var(--green-light); }
+.card-name  { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+.card-value { font-family: 'DM Serif Display', serif; font-size: 26px; color: var(--text); letter-spacing: -0.5px; }
+.card-note  { font-size: 11px; color: var(--text3); margin-top: 8px; }
+
+/* Section title */
+.section-title { font-size: 11px; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text3); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+/* Summary bar */
+.summary-bar { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; gap: 32px; margin-bottom: 28px; align-items: center; flex-wrap: wrap; }
+.summary-label { font-size: 10px; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text3); }
+.summary-value { font-family: 'DM Serif Display', serif; font-size: 20px; margin-top: 2px; }
+
+/* Account detail cards */
+.account-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.account-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.account-btn-group { display: flex; gap: 6px; }
+.account-edit-btn { background: none; border: 1px solid var(--border); color: var(--text3); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.15s; font-family: 'DM Mono', monospace; }
+.account-edit-btn:hover { border-color: var(--gold); color: var(--gold); }
+.account-del-btn  { background: none; border: 1px solid var(--border); color: var(--text3); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.15s; font-family: 'DM Mono', monospace; }
+.account-del-btn:hover  { border-color: var(--red-light); color: var(--red-light); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+.btn-primary { background: var(--gold); color: #0f0f0d; border-color: var(--gold); }
+.btn-primary:hover { background: var(--gold-light); }
+.btn-ghost { background: none; color: var(--text2); border-color: var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--border2); }
+
+/* Modal */
+.form-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.form-overlay.open { display: flex; }
+.form-box { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 28px; width: 440px; max-width: 95vw; animation: slideUp 0.2s ease; }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.form-title { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 20px; }
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; font-family: 'DM Mono', monospace; margin-bottom: 6px; display: block; }
+.form-input, .form-select { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 10px 12px; outline: none; transition: border-color 0.15s; appearance: none; }
+.form-input:focus, .form-select:focus { border-color: var(--gold); }
+.form-select option { background: var(--bg3); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
+.empty-state .empty-icon { font-size: 36px; margin-bottom: 14px; }
+.empty-state p { font-size: 13px; margin-bottom: 20px; }
+
+/* Goals page */
+.goal-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; }
+.goal-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+.goal-card-title { font-family: 'DM Serif Display', serif; font-size: 22px; }
+.goal-card-badge { font-size: 10px; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.8px; padding: 4px 10px; border-radius: 20px; }
+.badge-10  { background: var(--gold-dim);   color: var(--gold-light); }
+.badge-20  { background: var(--purple-dim); color: var(--purple-light); }
+.badge-100 { background: var(--green-dim);  color: var(--green-light); }
+.goal-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.goal-stat-label { font-size: 10px; color: var(--text3); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+.goal-stat-value { font-family: 'DM Serif Display', serif; font-size: 20px; }
+.goal-big-bar { height: 10px; background: var(--bg3); border-radius: 5px; overflow: hidden; margin-bottom: 10px; }
+.goal-big-fill { height: 100%; border-radius: 5px; transition: width 0.8s ease; }
+.goal-big-fill-10  { background: linear-gradient(90deg, var(--gold),   var(--gold-light)); }
+.goal-big-fill-20  { background: linear-gradient(90deg, var(--purple), var(--purple-light)); }
+.goal-big-fill-100 { background: linear-gradient(90deg, var(--green),  var(--green-light)); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
+
+@media (max-width: 768px) {
+  .sidebar { width: 60px; }
+  .sidebar-logo, .nav-item span, .sidebar-bottom .net-worth-label, .sidebar-bottom .net-worth-value, .goal-section { display: none; }
+  .nav-item { justify-content: center; }
+  .main { margin-left: 60px; padding: 20px; }
+  .cards-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Artho</h1>
+      <p>Finance Dashboard</p>
+    </div>
+    <div class="nav-item active" onclick="navigate('dashboard')">
+      <span class="nav-icon">◈</span><span>Dashboard</span>
+    </div>
+    <div class="nav-item" onclick="navigate('accounts')">
+      <span class="nav-icon">◉</span><span>Accounts</span>
+    </div>
+    <div class="nav-item" onclick="navigate('goals')">
+      <span class="nav-icon">◎</span><span>Net Worth Goals</span>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="net-worth-label">Net Worth</div>
+      <div class="net-worth-value" id="sidebar-networth">₹0</div>
+      <div class="goal-section">
+        <div class="goal-label-row">
+          <span class="goal-name">10L goal</span>
+          <span class="goal-remaining" id="sb-remaining-10">₹10L left</span>
+        </div>
+        <div class="goal-bar"><div class="goal-fill goal-fill-10" id="sb-bar-10" style="width:0%"></div></div>
+        <div class="goal-label-row">
+          <span class="goal-name">20L goal</span>
+          <span class="goal-remaining" id="sb-remaining-20">₹20L left</span>
+        </div>
+        <div class="goal-bar"><div class="goal-fill goal-fill-20" id="sb-bar-20" style="width:0%"></div></div>
+        <div class="goal-label-row">
+          <span class="goal-name">1Cr goal</span>
+          <span class="goal-remaining" id="sb-remaining-100">₹1Cr left</span>
+        </div>
+        <div class="goal-bar" style="margin-bottom:0"><div class="goal-fill goal-fill-100" id="sb-bar-100" style="width:0%"></div></div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-actions">
+        <div class="page-header" style="margin-bottom:0">
+          <h2>Good day 🙏</h2>
+          <p id="dashboard-date"></p>
+        </div>
+      </div>
+      <div class="summary-bar">
+        <div class="summary-item">
+          <div class="summary-label">Total Savings</div>
+          <div class="summary-value" id="sum-savings" style="color:var(--gold-light)">₹0</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Daily Available</div>
+          <div class="summary-value" id="sum-daily" style="color:var(--blue-light)">₹0</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Emergency Fund</div>
+          <div class="summary-value" id="sum-emergency" style="color:var(--red-light)">₹0</div>
+        </div>
+        <div class="summary-item">
+          <div class="summary-label">Investments</div>
+          <div class="summary-value" id="sum-investments" style="color:var(--purple-light)">₹0</div>
+        </div>
+      </div>
+      <div class="section-title">Accounts Overview</div>
+      <div class="cards-grid" id="accounts-cards"></div>
+    </div>
+
+    <!-- ACCOUNTS -->
+    <div class="page" id="page-accounts">
+      <div class="page-actions">
+        <div class="page-header" style="margin-bottom:0">
+          <h2>Accounts</h2>
+          <p>All your wallets, banks, and funds</p>
+        </div>
+        <button class="btn btn-primary" onclick="openAddAccount()">+ Add Account</button>
+      </div>
+      <div class="cards-grid" id="accounts-detail-cards"></div>
+    </div>
+
+    <!-- GOALS -->
+    <div class="page" id="page-goals">
+      <div class="page-header">
+        <h2>Net Worth Goals</h2>
+        <p>Track your journey to ₹10L, ₹20L and ₹1 Crore</p>
+      </div>
+      <div id="goals-content"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Add / Edit Account Modal -->
+<div class="form-overlay" id="account-modal">
+  <div class="form-box">
+    <div class="form-title" id="account-modal-title">Add Account</div>
+    <input type="hidden" id="edit-account-id" />
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Account Name</label>
+        <input type="text" class="form-input" id="acc-name" placeholder="e.g. NIC Bank" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Icon (emoji)</label>
+        <input type="text" class="form-input" id="acc-icon" placeholder="🏦" maxlength="4" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="acc-type">
+          <option value="saving">Saving</option>
+          <option value="daily">Daily</option>
+          <option value="emergency">Emergency</option>
+          <option value="investment">Investment</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Balance (₹)</label>
+        <input type="number" class="form-input" id="acc-balance" placeholder="0" min="0" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Note (optional)</label>
+      <input type="text" class="form-input" id="acc-note" placeholder="e.g. Monthly inflow, emergency reserve..." />
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeAccountModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAccount()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TYPE_CONFIG = {
+  saving:     { tag: 'tag-saving',     color: 'var(--gold-light)',   defaultIcon: '🏦' },
+  daily:      { tag: 'tag-daily',      color: 'var(--blue-light)',   defaultIcon: '💳' },
+  emergency:  { tag: 'tag-emergency',  color: 'var(--red-light)',    defaultIcon: '🔒' },
+  investment: { tag: 'tag-investment', color: 'var(--purple-light)', defaultIcon: '📈' },
+  other:      { tag: 'tag-other',      color: 'var(--green-light)',  defaultIcon: '💵' },
+};
+
+function getAccounts() {
+  try { return JSON.parse(localStorage.getItem('artho_v3')) || []; } catch { return []; }
+}
+function setAccounts(a) { localStorage.setItem('artho_v3', JSON.stringify(a)); }
+
+function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN'); }
+function fmtL(n) {
+  if (n >= 10000000) return '₹' + (n / 10000000).toFixed(2) + 'Cr';
+  if (n >= 100000)   return '₹' + (n / 100000).toFixed(2) + 'L';
+  return fmt(n);
+}
+
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(page)) n.classList.add('active');
+  });
+  if (page === 'dashboard') renderDashboard();
+  if (page === 'accounts')  renderAccountsPage();
+  if (page === 'goals')     renderGoals();
+  updateSidebar();
+}
+
+function updateSidebar() {
+  const total = getAccounts().reduce((s, a) => s + a.balance, 0);
+  document.getElementById('sidebar-networth').textContent = fmtL(total);
+  [
+    { target: 1000000,  barId: 'sb-bar-10',  remId: 'sb-remaining-10' },
+    { target: 2000000,  barId: 'sb-bar-20',  remId: 'sb-remaining-20' },
+    { target: 10000000, barId: 'sb-bar-100', remId: 'sb-remaining-100' },
+  ].forEach(g => {
+    const pct = Math.min(100, (total / g.target) * 100);
+    const rem = Math.max(0, g.target - total);
+    document.getElementById(g.barId).style.width = pct + '%';
+    document.getElementById(g.remId).textContent = rem > 0 ? fmtL(rem) + ' left' : '✓ Done!';
+  });
+}
+
+function renderDashboard() {
+  const accounts = getAccounts();
+  document.getElementById('dashboard-date').textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  document.getElementById('sum-savings').textContent    = fmt(accounts.filter(a => a.type==='saving').reduce((s,a) => s+a.balance, 0));
+  document.getElementById('sum-daily').textContent      = fmt(accounts.filter(a => a.type==='daily').reduce((s,a) => s+a.balance, 0));
+  document.getElementById('sum-emergency').textContent  = fmt(accounts.filter(a => a.type==='emergency').reduce((s,a) => s+a.balance, 0));
+  document.getElementById('sum-investments').textContent = fmt(accounts.filter(a => a.type==='investment').reduce((s,a) => s+a.balance, 0));
+
+  const grid = document.getElementById('accounts-cards');
+  if (!accounts.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;padding:40px 20px"><div class="empty-icon">◉</div><p>No accounts yet.<br>Go to <strong>Accounts</strong> and hit <strong>+ Add Account</strong> to get started.</p></div>`;
+    return;
+  }
+  grid.innerHTML = accounts.map(a => {
+    const cfg = TYPE_CONFIG[a.type] || TYPE_CONFIG.other;
+    return `<div class="card">
+      <div class="card-tag ${cfg.tag}">${a.icon || cfg.defaultIcon} ${a.type}</div>
+      <div class="card-name">${a.name}</div>
+      <div class="card-value">${fmt(a.balance)}</div>
+      ${a.note ? `<div class="card-note">${a.note}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderAccountsPage() {
+  const accounts = getAccounts();
+  const grid = document.getElementById('accounts-detail-cards');
+  if (!accounts.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">◉</div><p>No accounts yet.</p><button class="btn btn-primary" onclick="openAddAccount()">+ Add Account</button></div>`;
+    return;
+  }
+  grid.innerHTML = accounts.map(a => {
+    const cfg = TYPE_CONFIG[a.type] || TYPE_CONFIG.other;
+    return `<div class="account-card">
+      <div class="account-header">
+        <div>
+          <div class="card-tag ${cfg.tag}" style="margin-bottom:10px">${a.icon || cfg.defaultIcon} ${a.type}</div>
+          <div style="font-weight:500;font-size:15px">${a.name}</div>
+        </div>
+        <div class="account-btn-group">
+          <button class="account-edit-btn" onclick="openEditAccount('${a.id}')">Edit</button>
+          <button class="account-del-btn"  onclick="deleteAccount('${a.id}')">✕</button>
+        </div>
+      </div>
+      <div style="font-family:'DM Serif Display',serif;font-size:28px;color:${cfg.color}">${fmt(a.balance)}</div>
+      ${a.note ? `<div class="card-note">${a.note}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderGoals() {
+  const accounts = getAccounts();
+  const total = accounts.reduce((s, a) => s + a.balance, 0);
+  const goals = [
+    { label:'₹10 Lakh Milestone', sub:'First major wealth checkpoint',     target:1000000,  fillClass:'goal-big-fill-10',  statColor:'var(--gold-light)',   badgeClass:'badge-10',  targetLabel:'₹10L' },
+    { label:'₹20 Lakh Milestone', sub:'Financial independence checkpoint',  target:2000000,  fillClass:'goal-big-fill-20',  statColor:'var(--purple-light)', badgeClass:'badge-20',  targetLabel:'₹20L' },
+    { label:'₹1 Crore Milestone', sub:'The ultimate wealth milestone',      target:10000000, fillClass:'goal-big-fill-100', statColor:'var(--green-light)',  badgeClass:'badge-100', targetLabel:'₹1Cr' },
+  ];
+
+  let html = goals.map(g => {
+    const pct = Math.min(100, (total / g.target) * 100);
+    const rem = Math.max(0, g.target - total);
+    return `<div class="goal-card">
+      <div class="goal-card-header">
+        <div>
+          <div class="goal-card-title">${g.label}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px;font-family:'DM Mono',monospace">${g.sub}</div>
+        </div>
+        <span class="goal-card-badge ${g.badgeClass}">${rem===0 ? '✓ Achieved' : 'In Progress'}</span>
+      </div>
+      <div class="goal-stats">
+        <div><div class="goal-stat-label">Current</div><div class="goal-stat-value" style="color:${g.statColor}">${fmtL(total)}</div></div>
+        <div><div class="goal-stat-label">Target</div><div class="goal-stat-value">${g.targetLabel}</div></div>
+        <div><div class="goal-stat-label">Remaining</div><div class="goal-stat-value" style="color:${rem===0?'var(--green-light)':'var(--text2)'}">${rem===0?'Done!':fmtL(rem)}</div></div>
+      </div>
+      <div class="goal-big-bar"><div class="goal-big-fill ${g.fillClass}" style="width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">₹0</span>
+        <span style="font-size:13px;color:${g.statColor};font-family:'DM Mono',monospace;font-weight:500">${pct.toFixed(1)}%</span>
+        <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">${g.targetLabel}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (accounts.length) {
+    html += `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;">
+      <div class="section-title" style="margin-bottom:16px">Breakdown by Account</div>
+      ${accounts.map(a => {
+        const cfg = TYPE_CONFIG[a.type] || TYPE_CONFIG.other;
+        const pct = total > 0 ? (a.balance / total * 100) : 0;
+        return `<div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+            <span style="font-size:12px;color:var(--text2)">${a.icon || cfg.defaultIcon} ${a.name}</span>
+            <span style="font-size:12px;font-family:'DM Mono',monospace;color:var(--text)">${fmt(a.balance)} <span style="color:var(--text3)">(${pct.toFixed(1)}%)</span></span>
+          </div>
+          <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;border-radius:2px;background:${cfg.color};transition:width 0.6s ease"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  document.getElementById('goals-content').innerHTML = html;
+}
+
+let isEditingAccount = false;
+
+function openAddAccount() {
+  isEditingAccount = false;
+  document.getElementById('account-modal-title').textContent = 'Add Account';
+  document.getElementById('edit-account-id').value = '';
+  document.getElementById('acc-name').value = '';
+  document.getElementById('acc-icon').value = '';
+  document.getElementById('acc-type').value = 'saving';
+  document.getElementById('acc-balance').value = '';
+  document.getElementById('acc-note').value = '';
+  document.getElementById('account-modal').classList.add('open');
+  setTimeout(() => document.getElementById('acc-name').focus(), 100);
+}
+
+function openEditAccount(id) {
+  const acc = getAccounts().find(a => a.id === id);
+  if (!acc) return;
+  isEditingAccount = true;
+  document.getElementById('account-modal-title').textContent = 'Edit Account';
+  document.getElementById('edit-account-id').value = id;
+  document.getElementById('acc-name').value = acc.name;
+  document.getElementById('acc-icon').value = acc.icon || '';
+  document.getElementById('acc-type').value = acc.type;
+  document.getElementById('acc-balance').value = acc.balance;
+  document.getElementById('acc-note').value = acc.note || '';
+  document.getElementById('account-modal').classList.add('open');
+}
+
+function closeAccountModal() { document.getElementById('account-modal').classList.remove('open'); }
+
+function saveAccount() {
+  const name    = document.getElementById('acc-name').value.trim();
+  const icon    = document.getElementById('acc-icon').value.trim();
+  const type    = document.getElementById('acc-type').value;
+  const balance = parseFloat(document.getElementById('acc-balance').value) || 0;
+  const note    = document.getElementById('acc-note').value.trim();
+  if (!name) { alert('Please enter an account name.'); return; }
+  const accounts = getAccounts();
+  const id = document.getElementById('edit-account-id').value;
+  if (isEditingAccount && id) {
+    const idx = accounts.findIndex(a => a.id === id);
+    if (idx !== -1) accounts[idx] = { ...accounts[idx], name, icon, type, balance, note };
+  } else {
+    accounts.push({ id: Date.now().toString(), name, icon, type, balance, note });
+  }
+  setAccounts(accounts);
+  closeAccountModal();
+  renderAccountsPage();
+  renderDashboard();
+  updateSidebar();
+}
+
+function deleteAccount(id) {
+  const acc = getAccounts().find(a => a.id === id);
+  if (!acc || !confirm(`Delete "${acc.name}"? This cannot be undone.`)) return;
+  setAccounts(getAccounts().filter(a => a.id !== id));
+  renderAccountsPage();
+  renderDashboard();
+  updateSidebar();
+}
+
+document.getElementById('account-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeAccountModal();
+});
+
+renderDashboard();
+updateSidebar();
+</script>
+</body>
+</html>
